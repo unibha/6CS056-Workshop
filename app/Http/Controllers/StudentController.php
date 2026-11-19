@@ -1,96 +1,96 @@
 <?php
+
 namespace App\Http\Controllers;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
 class StudentController extends Controller
 {
-/**
-* Display a listing of the resource.
-*/
- public function index()
-   {
-       // Building the query
-       $query = Student::query();
-       $query = $query->orderBy("date_of_birth", "desc");
+    // Display all students
+    public function index()
+    {
+        return view('student.list', [
+            'students' => Student::all(),
+        ]);
+    }
 
+    // Show create student form
+    public function create()
+    {
+        return view('student.create');
+    }
 
-       // Running the query against database
-       $students = $query->get();
+    // Save new student
+    public function store(Request $request)
+    {
+        $student = Student::create(
+            $request->validate($this->rules())
+        );
 
+        return redirect()
+            ->route('students.index')
+            ->with('success', "Student {$student->name} created successfully!");
+    }
 
-       return view("student.index", compact("students"));
-   }
+    // Show student details
+    public function show(Student $student)
+    {
+        return view('student.detail', [
+            'student' => $student,
+        ]);
+    }
 
-/**
-* Show the form for creating a new resource.
-*/
-public function create()
-{
-return view("student.create");
-}
-/**
-* Store a newly created resource in storage.
-*/
-public function store(Request $request)
-   {
-       $validated = $request->validate([
-           "name" => "required|max:100|string",
-           "email" => "required|email",
-           "phone" => "nullable|max:20",
-           "address" => "nullable",
-           "date_of_birth" => "required|date"
-       ]);
+    // Show edit student form
+    public function edit(Student $student)
+    {
+        return view('student.edit', [
+            'student' => $student,
+        ]);
+    }
 
+    // Update student
+    public function update(Request $request, Student $student)
+    {
+        $student->update(
+            $request->validate($this->rules($student))
+        );
 
-       Student::create($validated);
+        return redirect()
+            ->route('students.show', $student)
+            ->with('success', 'Student updated successfully!');
+    }
 
+    // Delete student
+    public function destroy(Student $student)
+    {
+        $student->delete();
 
-       return redirect()
-           ->route("students.index")
-           ->with("success", "Student created successfully");
-   }
+        return redirect()
+            ->route('students.index')
+            ->with('success', 'Student deleted successfully!');
+    }
 
-/**
-* Display the specified resource.
-*/
-public function show(Student $student)
-{
-return view("student.show");
-}
-/**
-* Show the form for editing the specified resource.
-*/
-public function edit(Student $student)
-{
-return view("student.edit");
-}
-/**
-* Update the specified resource in storage.
-*/
- public function update(Request $request, Student $student)
-   {
-       $validated = $request->validate([
-           "name" => "required|max:100|string",
-           "email" => "required|email",
-           "phone" => "nullable|max:20",
-           "address" => "nullable",
-           "date_of_birth" => "required|date"
-       ]);
+    // Shared validation rules
+    private function rules(?Student $student = null): array
+    {
+        return [
+            'name' => 'required|string|max:255',
 
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('students')->ignore($student?->id),
+            ],
 
-       $student->update($validated);
-       $student->save();
+            'course' => 'required|string|max:255',
 
+            'phone' => 'required|string|max:20',
 
-       return redirect()->route('students.index')
-           ->with("success", "Student edited successfully");
-   }
+            'address' => 'required|string|max:255',
 
-/**
-* Remove the specified resource from storage.
-*/
-public function destroy(Student $student)
-{
-// 
-}
+            'date_of_birth' => 'required|date',
+        ];
+    }
 }
